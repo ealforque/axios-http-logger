@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*.*.*"]
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Initializing CICD Pipeline
+        uses: actions/checkout@v4
+
+      - name: Setting up Nodejs
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Installing dependencies
+        run: npm ci
+
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Linting codebase
+        run: |
+          npm run lint
+
+      - name: Executing Jest
+        run: |
+          npm run test
+
+      - name: Building codebase
+        run: npm run build
