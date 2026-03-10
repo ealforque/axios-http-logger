@@ -1,5 +1,5 @@
 {
-  "name": "axios-http-logger",
+  "name": "@ealforque/axios-http-logger",
   "version": "1.0.0",
   "description": "Logs every Axios HTTP Error automatically.",
   "author": "Eric Alforque <eric.alforque@gmail.com>",
