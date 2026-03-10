@@ -33,9 +33,23 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
 
   private writeLog(message: string): void {
     const logFilePath = this.getLogFilePath();
+    const lockFilePath = logFilePath + ".lock";
+    let waited = 0;
+    while (fs.existsSync(lockFilePath)) {
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 50);
+      waited += 50;
+      if (waited > 2000) {
+        throw new Error(
+          `AxiosHttpLogger: Log file lock timeout at ${logFilePath}`,
+        );
+      }
+    }
     try {
+      fs.writeFileSync(lockFilePath, "lock");
       fs.appendFileSync(logFilePath, message + "\n", { encoding: "utf8" });
+      fs.unlinkSync(lockFilePath);
     } catch {
+      if (fs.existsSync(lockFilePath)) fs.unlinkSync(lockFilePath);
       throw new Error(
         `AxiosHttpLogger: Unable to write log file at ${logFilePath}`,
       );

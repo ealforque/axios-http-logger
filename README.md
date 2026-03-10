@@ -71,18 +71,7 @@ This package uses Jest for unit tests. Run tests with:
 npm test
 ```
 
-## Supply Chain Security
-
-This package runs `npm audit` in its CI workflow to check for vulnerabilities in dependencies before publishing. Automated dependency updates and vulnerability checks are enabled for maximum supply chain security.
-
-Example GitHub Actions step:
-
-```yaml
-- name: Audit dependencies
-  run: npm audit --audit-level=high
-```
-
-## Error Handling Example (TypeScript)
+## Error Handling Example
 
 This package handles errors when writing logs to disk. If `fs.appendFileSync` fails (e.g., disk full, permission denied), a custom error is thrown.
 
@@ -108,4 +97,44 @@ AxiosHttpLogger: Unable to write log file at /path/to/logfile.log
 
 The error is thrown, so you can handle it in your application logic.
 
----
+## Error Handling for Concurrent Writes
+
+This package uses a file lock mechanism to prevent race conditions and file corruption when multiple processes write logs simultaneously. If a lock file is present, log writes wait for up to 2 seconds before timing out.
+
+```typescript
+import AxiosHttpLogger from "./src/axios_http_logger.service";
+
+const logger = new AxiosHttpLogger();
+
+try {
+  // This will attempt to write to the log file, waiting if another process is writing
+  logger["writeLog"]("Test log message");
+} catch (err) {
+  // If the lock file persists, a timeout error is thrown
+  if (err.message.includes("Log file lock timeout")) {
+    // Handle log write contention (e.g., retry, alert)
+  } else {
+    // Handle other log write errors (e.g., disk full)
+  }
+}
+```
+
+If an error occurs, you may see:
+
+```
+AxiosHttpLogger: Log file lock timeout at /path/to/logfile.log
+AxiosHttpLogger: Unable to write log file at /path/to/logfile.log
+```
+
+The error is thrown, so you can handle it in your application logic.
+
+## Dependency Audit
+
+This package runs `npm audit` in its CI workflow to check for vulnerabilities in dependencies before publishing. Automated dependency updates and vulnerability checks are enabled.
+
+Example GitHub Actions step:
+
+```yaml
+- name: Audit dependencies
+  run: npm audit --audit-level=high
+```
