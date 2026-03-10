@@ -64,6 +64,21 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
     }
   }
 
+  private safeStringify(obj: any): string {
+    const seen = new WeakSet();
+    try {
+      return JSON.stringify(obj, function (key, value) {
+        if (typeof value === "object" && value !== null) {
+          if (seen.has(value)) return "[Circular]";
+          seen.add(value);
+        }
+        return value;
+      });
+    } catch {
+      return String(obj);
+    }
+  }
+
   logError(error: AxiosError): void {
     const resp = (error as AxiosError)?.response;
     if (
@@ -75,7 +90,7 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
       typeof resp.config === "object"
     ) {
       const errResp = resp as AxiosResponse;
-      const logMsg = JSON.stringify({
+      const logMsg = this.safeStringify({
         type: "Axios Error Response",
         url: errResp.config.url,
         method: errResp.config.method,
@@ -88,7 +103,8 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
       });
       this.writeLog(logMsg);
     } else {
-      const logMsg = JSON.stringify({
+      // Malformed or non-conforming error object
+      const logMsg = this.safeStringify({
         type: "Axios Error (Malformed)",
         error: typeof error === "object" ? error : String(error),
         timestamp: new Date().toISOString(),

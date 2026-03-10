@@ -216,6 +216,62 @@ Example log entries:
 
 For valid `AxiosError` objects, the logger will log full request/response details. For malformed errors, only minimal information is logged, so you can handle or investigate as needed.
 
+### Circular References in Error Object
+
+If the error object contains circular references, `JSON.stringify` will normally throw and the log will not be written. This logger uses a safe serialization method that replaces circular references with `[Circular]` so logs are always written.
+
+```typescript
+import AxiosHttpLogger from "./src/axios_http_logger.service";
+
+const logger = new AxiosHttpLogger();
+
+// Example: error with circular reference
+const circularError: any = { message: "Circular error" };
+circularError.self = circularError;
+logger.logError(circularError);
+
+// Example: valid AxiosError with circular response data
+const data: any = { msg: "fail" };
+data.self = data;
+const error = {
+  response: {
+    config: {
+      url: "https://example.com/api",
+      method: "get",
+      params: {},
+      data: {},
+    },
+    status: 404,
+    headers: {},
+    data,
+  },
+};
+logger.logError(error as any);
+```
+
+Example log entries:
+
+```json
+{
+  "type": "Axios Error (Malformed)",
+  "error": { "message": "Circular error", "self": "[Circular]" },
+  "timestamp": "2026-03-11T12:34:56.789Z"
+}
+{
+  "type": "Axios Error Response",
+  "url": "https://example.com/api",
+  "method": "get",
+  "params": {},
+  "data": {},
+  "status": 404,
+  "headers": {},
+  "responseData": { "msg": "fail", "self": "[Circular]" },
+  "timestamp": "2026-03-11T12:34:56.789Z"
+}
+```
+
+Circular references are replaced with `[Circular]` so logs are always written and readable.
+
 ## Dependency Audit
 
 This package runs `npm audit` in its CI workflow to check for vulnerabilities in dependencies before publishing. Automated dependency updates and vulnerability checks are enabled.
