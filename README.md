@@ -81,3 +81,31 @@ Example GitHub Actions step:
 - name: Audit dependencies
   run: npm audit --audit-level=high
 ```
+
+## Error Handling Example (TypeScript)
+
+This package handles errors when writing logs to disk. If `fs.appendFileSync` fails (e.g., disk full, permission denied), a custom error is thrown.
+
+```typescript
+import AxiosHttpLogger from "./src/axios_http_logger.service";
+
+const logger = new AxiosHttpLogger();
+
+try {
+  // This will attempt to write to the log file
+  logger["writeLog"]("Test log message");
+} catch (err) {
+  // Error is thrown; handle as needed (e.g., alert, retry, etc.)
+  // Example: display error message or take corrective action
+}
+```
+
+If an error occurs, you will see an error like:
+
+```
+AxiosHttpLogger: Unable to write log file at /path/to/logfile.log
+```
+
+The error is thrown, so you can handle it in your application logic.
+
+---

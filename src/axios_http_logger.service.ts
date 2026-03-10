@@ -33,7 +33,13 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
 
   private writeLog(message: string): void {
     const logFilePath = this.getLogFilePath();
-    fs.appendFileSync(logFilePath, message + "\n", { encoding: "utf8" });
+    try {
+      fs.appendFileSync(logFilePath, message + "\n", { encoding: "utf8" });
+    } catch {
+      throw new Error(
+        `AxiosHttpLogger: Unable to write log file at ${logFilePath}`,
+      );
+    }
   }
 
   logError(error: AxiosError): void {
