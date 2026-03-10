@@ -15,7 +15,13 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
         ? AXIOS_LOGGER_PATH
         : logsDir;
     if (!fs.existsSync(this.logDir)) {
-      fs.mkdirSync(this.logDir, { recursive: true });
+      try {
+        fs.mkdirSync(this.logDir, { recursive: true });
+      } catch {
+        throw new Error(
+          `AxiosHttpLogger: Unable to create log directory at ${this.logDir}`,
+        );
+      }
     }
   }
 
