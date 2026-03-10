@@ -272,6 +272,117 @@ Example log entries:
 
 Circular references are replaced with `[Circular]` so logs are always written and readable.
 
+## Large Response Data Handling
+
+Logging large `responseData` may cause performance issues or excessively large log files. This logger automatically truncates `responseData` to 10KB and indicates truncation in the log entry.
+
+```typescript
+import AxiosHttpLogger from "./src/axios_http_logger.service";
+
+const logger = new AxiosHttpLogger();
+
+// Example: error with large responseData
+const bigData = "A".repeat(15000); // 15KB string
+const error = {
+  response: {
+    config: {
+      url: "https://example.com/api",
+      method: "get",
+      params: {},
+      data: {},
+    },
+    status: 404,
+    headers: {},
+    data: bigData,
+  },
+};
+logger.logError(error as any);
+```
+
+Example log entry:
+
+```json
+{
+  "type": "Axios Error Response",
+  "url": "https://example.com/api",
+  "method": "get",
+  "params": {},
+  "data": {},
+  "status": 404,
+  "headers": {},
+  "responseData": "AAAAAAAAAA...[truncated, 4990 bytes omitted]",
+  "timestamp": "2026-03-11T12:34:56.789Z"
+}
+```
+
+If `responseData` exceeds 10KB, it is truncated and the log entry indicates how many bytes were omitted. This keeps logs performant and readable.
+
+### Non-HTTP Errors
+
+Errors not related to HTTP (e.g., network errors, timeouts without a response) are logged with type `Axios Non-HTTP Error`, including `code`, `message`, and `stack` fields.
+
+```typescript
+const error = {
+  code: "ECONNREFUSED",
+  message: "Network down",
+  stack: "stacktrace",
+};
+logger.logError(error);
+// Log entry will include type, code, message, stack, and timestamp
+```
+
+### Timezone Handling
+
+Log file naming and timestamps use UTC by default. To use local time, set `logger.useLocalTime = true`.
+
+```typescript
+logger.useLocalTime = true;
+logger.logError(error);
+// Log file and timestamp will use local time
+```
+
+### Log Rotation
+
+Old log files are automatically deleted based on a configurable retention period (default: 30 days).
+
+```typescript
+// To customize retention period:
+logger.rotateLogs(7); // Keep logs for 7 days
+```
+
+### Sensitive Data Redaction
+
+Sensitive fields (e.g., password, token, authorization) are automatically redacted from logs. You can customize the fields:
+
+```typescript
+logger.sensitiveFields = ["password", "token", "authorization", "secret"];
+logger.logError(error);
+// Log entry will redact these fields recursively, including nested and circular references
+```
+
+### Example Log Entry (Sensitive Data Redacted)
+
+```json
+{
+  "type": "Axios Error Response",
+  "url": "https://example.com/api",
+  "method": "post",
+  "params": { "token": "[REDACTED]", "password": "[REDACTED]", "foo": "bar" },
+  "data": {
+    "authorization": "[REDACTED]",
+    "nested": { "password": "[REDACTED]" }
+  },
+  "status": 200,
+  "headers": { "authorization": "[REDACTED]" },
+  "responseData": {
+    "token": "[REDACTED]",
+    "password": "[REDACTED]",
+    "foo": "bar"
+  },
+  "timestamp": "2026-03-11T12:34:56.789Z"
+}
+```
+
 ## Dependency Audit
 
 This package runs `npm audit` in its CI workflow to check for vulnerabilities in dependencies before publishing. Automated dependency updates and vulnerability checks are enabled.

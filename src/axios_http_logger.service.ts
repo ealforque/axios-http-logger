@@ -8,6 +8,9 @@ import { AxiosLoggerServiceInterface } from "./interfaces/axios_logger.interface
 class AxiosHttpLogger implements AxiosLoggerServiceInterface {
   private logDir: string;
 
+  private sensitiveFields = ["password", "token", "authorization"];
+  private useLocalTime = false;
+
   constructor() {
     const logsDir = path.join(process.cwd(), "logs");
     this.logDir =
@@ -33,9 +36,50 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
     }
   }
 
+  // Redact sensitive fields from an object, handles circular refs
+  private redact(obj: any, seen = new WeakSet()): any {
+    if (typeof obj !== "object" || obj === null) return obj;
+    if (seen.has(obj)) return "[Circular]";
+    seen.add(obj);
+    const clone: Record<string, any> = Array.isArray(obj) ? [] : {};
+    for (const key in obj) {
+      if (this.sensitiveFields.includes(key.toLowerCase())) {
+        clone[key] = "[REDACTED]";
+      } else if (typeof obj[key] === "object" && obj[key] !== null) {
+        clone[key] = this.redact(obj[key], seen);
+      } else {
+        clone[key] = obj[key];
+      }
+    }
+    return clone;
+  }
+
+  private rotateLogs(maxDays = 30): void {
+    const logDir = this.logDir;
+    try {
+      const files = fs.readdirSync(logDir);
+      const now = Date.now();
+      files.forEach((file) => {
+        if (file.startsWith("axios-http-") && file.endsWith(".log")) {
+          const dateStr = file.slice(11, 21); // YYYY-MM-DD
+          const fileDate = new Date(dateStr).getTime();
+          if (now - fileDate > maxDays * 86400000) {
+            fs.unlinkSync(path.join(logDir, file));
+          }
+        }
+      });
+    } catch {}
+  }
+
   private getLogFilePath(): string {
-    const date = new Date();
-    const day = date.toISOString().slice(0, 10);
+    const date = this.useLocalTime
+      ? new Date()
+      : new Date(new Date().toUTCString());
+    const day = this.useLocalTime
+      ? date.toISOString().slice(0, 10)
+      : new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+          .toISOString()
+          .slice(0, 10);
     return path.join(this.logDir, `axios-http-${day}.log`);
   }
 
@@ -79,7 +123,23 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
     }
   }
 
-  logError(error: AxiosError): void {
+  private truncateData(data: any, maxBytes = 10240): any {
+    try {
+      const str = typeof data === "string" ? data : this.safeStringify(data);
+      if (Buffer.byteLength(str, "utf8") > maxBytes) {
+        return (
+          str.slice(0, maxBytes) +
+          `...[truncated, ${Buffer.byteLength(str, "utf8") - maxBytes} bytes omitted]`
+        );
+      }
+      return data;
+    } catch {
+      return "[unloggable responseData]";
+    }
+  }
+
+  logError(error: AxiosError | any): void {
+    this.rotateLogs(); // Clean up old logs
     const resp = (error as AxiosError)?.response;
     if (
       typeof error === "object" &&
@@ -94,12 +154,26 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
         type: "Axios Error Response",
         url: errResp.config.url,
         method: errResp.config.method,
-        params: errResp.config.params,
-        data: errResp.config.data,
+        params: this.redact(errResp.config.params),
+        data: this.redact(errResp.config.data),
         status: errResp.status,
-        headers: errResp.headers,
-        responseData: errResp.data,
-        timestamp: new Date().toISOString(),
+        headers: this.redact(errResp.headers),
+        responseData: this.truncateData(this.redact(errResp.data)),
+        timestamp: this.useLocalTime
+          ? new Date().toLocaleString()
+          : new Date().toISOString(),
+      });
+      this.writeLog(logMsg);
+    } else if (typeof error === "object" && error !== null) {
+      // Network error, timeout, etc.
+      const logMsg = this.safeStringify({
+        type: "Axios Non-HTTP Error",
+        code: error.code,
+        message: error.message,
+        stack: error.stack,
+        timestamp: this.useLocalTime
+          ? new Date().toLocaleString()
+          : new Date().toISOString(),
       });
       this.writeLog(logMsg);
     } else {
@@ -107,7 +181,9 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
       const logMsg = this.safeStringify({
         type: "Axios Error (Malformed)",
         error: typeof error === "object" ? error : String(error),
-        timestamp: new Date().toISOString(),
+        timestamp: this.useLocalTime
+          ? new Date().toLocaleString()
+          : new Date().toISOString(),
       });
       this.writeLog(logMsg);
     }

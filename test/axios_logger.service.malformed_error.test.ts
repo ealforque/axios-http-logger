@@ -23,7 +23,7 @@ describe("AxiosHttpLoggerService malformed error object handling", () => {
     });
     expect(fs.appendFileSync).toHaveBeenCalledWith(
       expect.any(String),
-      expect.stringContaining("Axios Error (Malformed)"),
+      expect.stringContaining("Axios Non-HTTP Error"),
       { encoding: "utf8" },
     );
   });
