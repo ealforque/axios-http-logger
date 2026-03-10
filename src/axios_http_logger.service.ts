@@ -17,11 +17,19 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
     if (!fs.existsSync(this.logDir)) {
       try {
         fs.mkdirSync(this.logDir, { recursive: true });
-      } catch {
+      } catch (err) {
         throw new Error(
-          `AxiosHttpLogger: Unable to create log directory at ${this.logDir}`,
+          `AxiosHttpLogger: Unable to create log directory at ${this.logDir}. Reason: ${(err as Error).message}`,
         );
       }
+    }
+
+    try {
+      fs.accessSync(this.logDir, fs.constants.W_OK);
+    } catch (err) {
+      throw new Error(
+        `AxiosHttpLogger: Log directory at ${this.logDir} is not writable. Reason: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -57,13 +65,16 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
   }
 
   logError(error: AxiosError): void {
+    const resp = (error as AxiosError)?.response;
     if (
       typeof error === "object" &&
       error !== null &&
-      "response" in error &&
-      (error as AxiosError).response
+      resp &&
+      typeof resp === "object" &&
+      resp.config &&
+      typeof resp.config === "object"
     ) {
-      const errResp = (error as AxiosError).response as AxiosResponse;
+      const errResp = resp as AxiosResponse;
       const logMsg = JSON.stringify({
         type: "Axios Error Response",
         url: errResp.config.url,
@@ -78,8 +89,8 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
       this.writeLog(logMsg);
     } else {
       const logMsg = JSON.stringify({
-        type: "Axios Error",
-        error,
+        type: "Axios Error (Malformed)",
+        error: typeof error === "object" ? error : String(error),
         timestamp: new Date().toISOString(),
       });
       this.writeLog(logMsg);

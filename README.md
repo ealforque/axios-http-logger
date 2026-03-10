@@ -22,10 +22,10 @@ A TypeScript utility that logs every Axios HTTP request and response automatical
 ## Installation
 
 ```bash
-npm install axios-http-logger
+npm install @ealforque/axios-http-logger
 ```
 
-## Usage
+## Usage (Correct Example)
 
 ```typescript
 import axios from "axios";
@@ -49,7 +49,7 @@ By default, logs are written to a `logs/` directory in your project root. To cus
 AXIOS_LOGGER_PATH=/custom/log/path
 ```
 
-## Example Log Entry
+### Example Log Entry
 
 ```json
 {
@@ -63,15 +63,9 @@ AXIOS_LOGGER_PATH=/custom/log/path
 }
 ```
 
-## Testing
+## Edge Case Handling
 
-This package uses Jest for unit tests. Run tests with:
-
-```bash
-npm test
-```
-
-## Error Handling Example
+### Log Directory Creation Failure
 
 This package handles errors when writing logs to disk. If `fs.appendFileSync` fails (e.g., disk full, permission denied), a custom error is thrown.
 
@@ -97,7 +91,36 @@ AxiosHttpLogger: Unable to write log file at /path/to/logfile.log
 
 The error is thrown, so you can handle it in your application logic.
 
-## Error Handling for Concurrent Writes
+### Log File Write Failure
+
+If `fs.appendFileSync` fails (e.g., disk full, permission denied), the logger throws a custom error. This ensures that file write errors are not silently ignored and can be handled in your application logic.
+
+```typescript
+import AxiosHttpLogger from "./src/axios_http_logger.service";
+
+const logger = new AxiosHttpLogger();
+
+try {
+  // This will attempt to write to the log file
+  logger["writeLog"]("Test log message");
+} catch (err) {
+  // Handle log file write errors
+  if (err.message.includes("Unable to write log file")) {
+    // Log file write failed (e.g., disk full, permission denied)
+    // Example: alert, retry, or log to alternative location
+  }
+}
+```
+
+Example error:
+
+```
+AxiosHttpLogger: Unable to write log file at /path/to/logfile.log
+```
+
+The error is thrown, so you can handle it in your application logic.
+
+### Concurrent Writes
 
 This package uses a file lock mechanism to prevent race conditions and file corruption when multiple processes write logs simultaneously. If a lock file is present, log writes wait for up to 2 seconds before timing out.
 
@@ -127,6 +150,71 @@ AxiosHttpLogger: Unable to write log file at /path/to/logfile.log
 ```
 
 The error is thrown, so you can handle it in your application logic.
+
+## AXIOS_LOGGER_PATH Invalid
+
+If `AXIOS_LOGGER_PATH` is set to a non-existent or invalid path, directory creation may fail or the directory may not be writable. The logger will throw a clear error and will not fallback silently.
+
+```typescript
+import AxiosHttpLogger from "./src/axios_http_logger.service";
+
+process.env.AXIOS_LOGGER_PATH = "/invalid/path";
+
+try {
+  const logger = new AxiosHttpLogger();
+  logger["writeLog"]("Test log message");
+} catch (err) {
+  // Handle log directory errors
+  if (err.message.includes("Unable to create log directory")) {
+    // Directory creation failed (e.g., permission denied)
+  } else if (err.message.includes("is not writable")) {
+    // Directory exists but is not writable
+  }
+}
+```
+
+Example errors:
+
+```
+AxiosHttpLogger: Unable to create log directory at /invalid/path. Reason: EACCES: permission denied
+AxiosHttpLogger: Log directory at /invalid/path is not writable. Reason: EACCES: permission denied
+```
+
+The error is thrown, so you can handle it in your application logic.
+
+### Malformed Error Object Handling
+
+If the error object passed to the logger does not conform to `AxiosError` (e.g., missing `response`, malformed structure), the logger will log a minimal entry to avoid misleading information.
+
+```typescript
+import AxiosHttpLogger from "./src/axios_http_logger.service";
+
+const logger = new AxiosHttpLogger();
+
+// Example: error missing response
+const malformedError = { message: "Something went wrong" };
+logger.logError(malformedError as any);
+
+// Example: completely malformed error
+logger.logError("not an object" as any);
+```
+
+Example log entries:
+
+```json
+{
+  "type": "Axios Error (Malformed)",
+  "error": { "message": "Something went wrong" },
+  "timestamp": "2026-03-11T12:34:56.789Z"
+}
+{
+  "type": "Axios Error (Malformed)",
+  "error": "not an object",
+  "timestamp": "2026-03-11T12:34:56.789Z"
+}
+```
+
+For valid `AxiosError` objects, the logger will log full request/response details. For malformed errors, only minimal information is logged, so you can handle or investigate as needed.
 
 ## Dependency Audit
 
