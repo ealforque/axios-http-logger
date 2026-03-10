@@ -19,6 +19,9 @@
   "bugs": {
     "url": "https://github.com/ealforque/axios-http-logger/issues"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "axios",
     "logger",
