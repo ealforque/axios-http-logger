@@ -1,17 +1,15 @@
 {
   "name": "@ealforque/axios-http-logger",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Logs every Axios HTTP Error automatically.",
   "author": "Eric Alforque <eric.alforque@gmail.com>",
   "main": "dist/axios_http_logger.service.js",
   "types": "dist/axios_http_logger.service.d.ts",
-  "scripts": {
-    "build": "rm -rf dist && tsc",
-    "test": "jest --clearCache && jest --coverage --detectOpenHandles",
-    "format": "prettier --write .",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
-  },
+  "files": [
+    "dist",
+    "README.md",
+    "SECURITY.md"
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/ealforque/axios-http-logger.git"
@@ -19,22 +17,19 @@
   "bugs": {
     "url": "https://github.com/ealforque/axios-http-logger/issues"
   },
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "test": "jest --clearCache && jest --coverage --detectOpenHandles",
+    "format": "prettier --write .",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
+  },
   "publishConfig": {
     "access": "public"
   },
-  "keywords": [
-    "axios",
-    "logger",
-    "http",
-    "interceptor",
-    "logging"
-  ],
-  "license": "MIT",
-  "dependencies": {
-    "dotenv": "^17.3.1"
-  },
   "peerDependencies": {
-    "axios": "^1.13.6"
+    "axios": "^1.13.6",
+    "dotenv": "^17.3.1"
   },
   "devDependencies": {
     "@types/jest": "30.0.0",
@@ -51,5 +46,13 @@
     "ts-node": "10.9.2",
     "typescript": "5.9.3",
     "typescript-eslint": "8.56.1"
-  }
+  },
+  "license": "MIT",
+  "keywords": [
+    "axios",
+    "logger",
+    "http",
+    "interceptor",
+    "logging"
+  ]
 }

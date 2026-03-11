@@ -1,9 +1,9 @@
 # Axios HTTP Logger
 
-![npm version](https://img.shields.io/npm/v/axios-http-logger)
+![npm version](https://img.shields.io/npm/v/@ealforque/axios-http-logger)
 ![build](https://github.com/ealforque/axios-http-logger/actions/workflows/release.yaml/badge.svg)
 ![license](https://img.shields.io/badge/license-MIT-green)
-[![Socket Badge](https://badge.socket.dev/npm/package/axios-http-logger)](https://badge.socket.dev/npm/package/axios-http-logger)
+[![Socket Badge](https://badge.socket.dev/npm/package/@ealforque/axios-http-logger)](https://badge.socket.dev/npm/package/@ealforque/axios-http-logger)
 
 ## Description
 
