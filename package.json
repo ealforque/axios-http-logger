@@ -28,7 +28,7 @@
     "access": "public"
   },
   "peerDependencies": {
-    "axios": "^1.13.6",
+    "axios": ">=1",
     "dotenv": ">=16"
   },
   "devDependencies": {
