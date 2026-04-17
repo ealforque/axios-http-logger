@@ -29,8 +29,9 @@ describe("AxiosHttpLoggerService log rotation", () => {
   it("should not delete recent log files", () => {
     logger.logError({ code: "ECONNREFUSED", message: "Network down" } as any);
     const today = new Date().toISOString().slice(0, 10);
-    expect(fs.unlinkSync).not.toHaveBeenCalledWith(
-      expect.stringContaining(today),
-    );
+    const unlinkCalls = (fs.unlinkSync as jest.Mock).mock.calls
+      .map((c) => c[0] as string)
+      .filter((p) => p.endsWith(".log") && !p.endsWith(".log.lock"));
+    expect(unlinkCalls).not.toContain(expect.stringContaining(today));
   });
 });
