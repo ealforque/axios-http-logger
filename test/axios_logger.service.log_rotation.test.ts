@@ -8,6 +8,7 @@ jest.mock("fs");
   "axios-http-2026-02-01.log",
   "axios-http-2026-03-10.log",
   "axios-http-2026-03-11.log",
+  `axios-http-${new Date().toISOString().slice(0, 10)}.log`,
 ]);
 (fs.unlinkSync as jest.Mock).mockImplementation(() => {});
 
@@ -23,5 +24,14 @@ describe("AxiosHttpLoggerService log rotation", () => {
     expect(fs.unlinkSync).toHaveBeenCalledWith(
       expect.stringContaining("2026-02-01.log"),
     );
+  });
+
+  it("should not delete recent log files", () => {
+    logger.logError({ code: "ECONNREFUSED", message: "Network down" } as any);
+    const today = new Date().toISOString().slice(0, 10);
+    const unlinkCalls = (fs.unlinkSync as jest.Mock).mock.calls
+      .map((c) => c[0] as string)
+      .filter((p) => p.endsWith(".log") && !p.endsWith(".log.lock"));
+    expect(unlinkCalls).not.toContain(expect.stringContaining(today));
   });
 });
