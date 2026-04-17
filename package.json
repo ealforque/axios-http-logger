@@ -1,6 +1,6 @@
 {
   "name": "@ealforque/axios-http-logger",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Logs every Axios HTTP Error automatically.",
   "author": "Eric Alforque <eric.alforque@gmail.com>",
   "main": "dist/axios_http_logger.service.js",
