@@ -139,7 +139,7 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
   }
 
   logError(error: AxiosError | any): void {
-    this.rotateLogs(); // Clean up old logs
+    this.rotateLogs();
     const resp = (error as AxiosError)?.response;
     if (
       typeof error === "object" &&
@@ -177,7 +177,6 @@ class AxiosHttpLogger implements AxiosLoggerServiceInterface {
       });
       this.writeLog(logMsg);
     } else {
-      // Malformed or non-conforming error object
       const logMsg = this.safeStringify({
         type: "Axios Error (Malformed)",
         error: typeof error === "object" ? error : String(error),
